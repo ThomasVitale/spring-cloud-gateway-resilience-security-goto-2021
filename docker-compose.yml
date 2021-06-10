@@ -1,0 +1,127 @@
+version: "3.8"
+services:
+
+  postgres-book:
+    image: "postgres:13"
+    container_name: "postgres-book"
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=bookdb
+    volumes:
+      - postgres-book-data:/var/lib/postgresql/data
+
+  keycloak:
+    image: jboss/keycloak:13.0.0
+    container_name: "keycloak"
+    volumes:
+      - ./platform-config/keycloak:/opt/jboss/keycloak/imports
+    command:
+      - "-b 0.0.0.0 -Dkeycloak.import=/opt/jboss/keycloak/imports/realm-export.json"
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: password
+    ports:
+      - 8080:8080
+
+  # Observability
+
+  grafana:
+    image: grafana/grafana:8.0.1
+    container_name: grafana
+    depends_on:
+      - loki
+      - prometheus
+      - tempo
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: password
+    volumes:
+      - ./platform-config/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - grafana-data:/var/lib/grafana
+
+  prometheus:
+    image: prom/prometheus:2.27.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - "./platform-config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+
+  loki:
+    image: grafana/loki:2.2.1
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    depends_on:
+      - fluent-bit
+    ports:
+      - "3100:3100"
+
+  fluent-bit:
+    image: grafana/fluent-bit-plugin-loki:1.7.8
+    container_name: fluent-bit
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    environment:
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+    volumes:
+      - ./platform-config/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+
+  tempo:
+    image: grafana/tempo:1.0.0
+    container_name: tempo
+    command: -config.file /etc/tempo-config.yml
+    volumes:
+      - ./platform-config/tempo/tempo.yml:/etc/tempo-config.yml
+    ports:
+      - "3101:3100"     # Tempo
+      - "9411:9411"     # Zipkin
+
+  # Applications
+
+  book-service:
+    image: book-service:0.0.1-SNAPSHOT
+    container_name: book-service
+    depends_on:
+      - fluent-bit
+      - keycloak
+      - postgres-book
+    ports:
+      - "9001:9001"
+    environment:
+      - BPL_JVM_THREAD_COUNT=50
+      - KEYCLOAK_URL=http://kubernetes.docker.internal:8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-book:5432/bookdb
+      - ZIPKIN_URL=http://tempo:9411/
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224
+
+  edge-service:
+    image: edge-service:0.0.1-SNAPSHOT
+    container_name: edge-service
+    depends_on:
+      - fluent-bit
+      - keycloak
+    ports:
+      - "9000:9000"
+    environment:
+      - BPL_JVM_THREAD_COUNT=25
+      - KEYCLOAK_URL=http://kubernetes.docker.internal:8080
+      - ZIPKIN_URL=http://tempo:9411/
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224
+
+volumes:
+  grafana-data:
+    name: grafana-data
+  postgres-book-data:
+    name: postgres-book-data
