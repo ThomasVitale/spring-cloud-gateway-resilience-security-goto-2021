@@ -8,8 +8,17 @@ management:
         include: "*"
 
 spring:
+  redis:
+    host: localhost
+    port: 6379
   cloud:
     gateway:
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+            redis-rate-limiter.requestedTokens: 1
       routes:
         - id: book-route
           uri: ${BOOK_SERVICE_URL:http://localhost:9001}
