@@ -8,12 +8,24 @@ management:
         include: "*"
 
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: edge-service
+            client-secret: 636f4ef3-e6aa-4076-a5ae-5e4925524fed
+            scope: openid
+        provider:
+          keycloak:
+            issuer-uri: ${KEYCLOAK_URL:http://localhost:8080}/auth/realms/Bookshop
   redis:
     host: localhost
     port: 6379
   cloud:
     gateway:
       default-filters:
+        - TokenRelay
         - name: RequestRateLimiter
           args:
             redis-rate-limiter.replenishRate: 10
