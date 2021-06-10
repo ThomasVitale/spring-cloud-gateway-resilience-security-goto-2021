@@ -1,1 +1,1 @@
-# spring-cloud-gateway-resilience-security-goto-2021
+# Spring Cloud Gateway - Resilience & Security (GOTO Aarhus 2021)
