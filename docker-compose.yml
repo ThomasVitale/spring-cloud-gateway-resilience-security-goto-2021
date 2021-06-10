@@ -89,7 +89,6 @@ services:
     environment:
       - BPL_JVM_THREAD_COUNT=50
       - KEYCLOAK_URL=http://kubernetes.docker.internal:8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-book:5432/bookdb
       - ZIPKIN_URL=http://tempo:9411/
     logging:
       driver: fluentd
@@ -106,7 +105,9 @@ services:
       - "9000:9000"
     environment:
       - BPL_JVM_THREAD_COUNT=25
+      - BOOK_SERVICE_URL=http://book-service:9001
       - KEYCLOAK_URL=http://kubernetes.docker.internal:8080
+      - SPRING_REDIS_HOST=redis
       - ZIPKIN_URL=http://tempo:9411/
     logging:
       driver: fluentd
