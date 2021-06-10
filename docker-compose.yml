@@ -1,18 +1,6 @@
 version: "3.8"
 services:
 
-  postgres-book:
-    image: "postgres:13"
-    container_name: "postgres-book"
-    ports:
-      - 5432:5432
-    environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=bookdb
-    volumes:
-      - postgres-book-data:/var/lib/postgresql/data
-
   keycloak:
     image: jboss/keycloak:13.0.0
     container_name: "keycloak"
@@ -90,7 +78,6 @@ services:
     depends_on:
       - fluent-bit
       - keycloak
-      - postgres-book
     ports:
       - "9001:9001"
     environment:
@@ -123,5 +110,3 @@ services:
 volumes:
   grafana-data:
     name: grafana-data
-  postgres-book-data:
-    name: postgres-book-data
