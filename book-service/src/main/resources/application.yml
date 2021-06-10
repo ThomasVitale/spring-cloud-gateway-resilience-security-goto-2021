@@ -8,6 +8,8 @@ management:
         include: "*"
 
 spring:
+  application:
+    name: book-service
   zipkin:
     base-url: ${ZIPKIN_URL:http://localhost:9411/}
   security:
