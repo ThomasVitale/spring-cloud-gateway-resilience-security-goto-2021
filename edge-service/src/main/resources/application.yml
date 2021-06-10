@@ -27,6 +27,10 @@ spring:
           filters:
             - AddRequestHeader=X-Tenant,acme
             - AddResponseHeader=X-Genre,fantasy
+            - name: CircuitBreaker
+              args:
+                name: bookService
+                fallbackUri: forward:/book-fallback
             - name: Retry
               args:
                 retries: 3
@@ -34,3 +38,17 @@ spring:
                 backoff:
                   firstBackoff: 50ms
                   maxBackoff: 500ms
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      bookService:
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 15000
+        registerHealthIndicator: true
+  timelimiter:
+    instances:
+      bookService:
+        timeoutDuration: 2s
