@@ -6,3 +6,15 @@ management:
     web:
       exposure:
         include: "*"
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: book-route
+          uri: ${BOOK_SERVICE_URL:http://localhost:9001}
+          predicates:
+            - Path=/books/**
+          filters:
+            - AddRequestHeader=X-Tenant,acme
+            - AddResponseHeader=X-Genre,fantasy
